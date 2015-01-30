@@ -62,7 +62,7 @@ public class FtvHandler {
 
                 if (nes.nextEpisodeData != null) {
                     dbao.updateNextEpisodeData(s, nes.nextEpisodeData.nextepidate, nes.nextEpisodeData.nexteid);
-                } 
+                }
 
                 Map show = (Map) dbao.getShowData(s);
                 Map seasons = (Map) show.get("seasons");
@@ -76,7 +76,13 @@ public class FtvHandler {
                 if ((int) seasons.get("count") == nes.seasons) {
                     for (int i = 0; i < nes.seasons; i++) {
                         int remoteEpiCount = nes.episodes[i];
-                        int localEpiCount = (int) ((BasicDBList) seasons.get("episode_distr")).get(i);
+                        Object o = ((BasicDBList) seasons.get("episode_distr")).get(i);
+                        int localEpiCount = 0;
+                        if (o instanceof Double) {
+                            localEpiCount = ((Double) o).intValue();
+                        } else {
+                            localEpiCount = (int) o;
+                        }
 
                         if (remoteEpiCount > localEpiCount) {
                             String[] newEids = fillUnwatched(remoteEpiCount - localEpiCount, i + 1, localEpiCount + 1);
