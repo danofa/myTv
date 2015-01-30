@@ -54,3 +54,5 @@ pubspec.lock
 ### DartEditor ###
 .project
 .buildlog
+!/src/main/webapp/WEB-INF/web.xml
+!/src/main/webapp/META-INF/context.xml
