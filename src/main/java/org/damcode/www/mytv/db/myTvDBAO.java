@@ -38,12 +38,18 @@ public class myTvDBAO {
         return shows;
     }
 
+    public void deleteShow(String show) {
+        try {
+            dbCollection.remove(new BasicDBObject("_id", show));
+        } catch (MongoException ex) {
+            System.out.println("Error in deleting " + show + " : " + ex);
+        }
+    }
+
     public void setWatched(String show, String episodeId) {
         BasicDBObject pullAndSet = new BasicDBObject("$pull", new BasicDBObject("unwatched_ids", episodeId))
                 .append("$addToSet", new BasicDBObject("watched_ids", episodeId));
         dbCollection.update(new BasicDBObject("_id", show), pullAndSet);
-        
-        System.out.println("uwId: " + episodeId);
     }
 
     public void addShow(Show show) {
@@ -72,13 +78,10 @@ public class myTvDBAO {
 
         while (curs.hasNext()) {
             Map m = curs.next().toMap();
-            if (m.get("nexteid") == null) {
-                System.out.println("End of episodes: " + m.get("_id"));
-            } else {
+            if (m.get("nexteid") != null) {
                 nextData.add(m);
             }
         }
-
         return nextData;
     }
 
@@ -95,18 +98,11 @@ public class myTvDBAO {
         int totalcount = 0;
         try {
             Object o = result.results().iterator().next().get("totalep");
-            System.out.println(show +" @ object is: " + o.getClass());
-            System.out.println("results!: " + result.results().toString());
-            System.out.println(">>");
-            System.out.println("o is double: " + (o instanceof Double));
-            System.out.println("<<");
-            if(o instanceof Double){
-                System.out.println("ima double!");
+            if (o instanceof Double) {
                 totalcount = ((Double) o).intValue();
             } else {
                 totalcount = (int) o;
             }
-            
         } catch (Exception e) {
             System.out.println("error in aggregation getEpisodeCount: " + e);
         }
@@ -114,8 +110,6 @@ public class myTvDBAO {
     }
 
     public void addUnwatchedEids(String show, String[] eids) {
-        System.out.println("addNewSeason: " + show + " // " + Arrays.toString(eids));
-
         BasicDBObject qry = new BasicDBObject("_id", show);
         BasicDBObject upd = new BasicDBObject("$addToSet", new BasicDBObject("unwatched_ids", new BasicDBObject("$each", eids)));
         dbCollection.update(qry, upd);
@@ -123,8 +117,8 @@ public class myTvDBAO {
 
     public void updateSeasonsData(String show, int season, int numTotalEpisodes) {
         BasicDBObject qry = new BasicDBObject("_id", show);
-        BasicDBObject upd = new BasicDBObject("$set", new BasicDBObject("seasons.episode_distr." + (season-1), numTotalEpisodes));
-        dbCollection.update(qry, upd);        
+        BasicDBObject upd = new BasicDBObject("$set", new BasicDBObject("seasons.episode_distr." + (season - 1), numTotalEpisodes));
+        dbCollection.update(qry, upd);
     }
 
     public DBObject getShowData(String show) {
@@ -135,12 +129,10 @@ public class myTvDBAO {
         return dbCollection.findOne(qry);
     }
 
-    public void updateNextEpisodeData(String show, Date neDate, String neId){
+    public void updateNextEpisodeData(String show, Date neDate, String neId) {
         BasicDBObject qry = new BasicDBObject("_id", show);
         BasicDBObject upd = new BasicDBObject("$set", new BasicDBObject("nexteid", neId).append("nextepidate", neDate));
-        
+
         WriteResult update = dbCollection.update(qry, upd);
-        System.out.println("db update of next episodes: " + update.toString());
     }
-    
 }

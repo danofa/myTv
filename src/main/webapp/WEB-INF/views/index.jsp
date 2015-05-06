@@ -23,7 +23,7 @@
                             <a href="${baseurl}${ushow._id}">${ushow._id}</a> // 
                             <a href="${baseurl}${ushow._id}/${splituw[0]}.html#${splituw[1]}" target="_blank">${splituw[0]}#${splituw[1]}</a>
                             <a style="margin-left: 10px;" href="seen?eid=${splituw[2]}&_id=${ushow._id}" title="Mark as Seen"><span class="glyphicon glyphicon-eye-open"></span></a> <br>
-                            </c:forEach><br>
+                        </c:forEach><br>
                     </c:forEach>
 
                 </div>
@@ -40,15 +40,13 @@
             <div class="well" style="margin-top: 50px;">
                 <form method="GET" action="add" class="form-inline">
                     <input type="text" name="_id" class="form-control">
-                    <button class="btn btn-default" type="submit">Add <span class="glyphicon glyphicon-plus"></span></button> // 
-                    <a class="btn btn-default" href="update">Update Shows <span class="glyphicon glyphicon-refresh"></span></a> 
+                    <button class="btn btn-default" type="submit">Add <span class="glyphicon glyphicon-plus"></span></button><div style="display: inline; margin-left:50px;"/>
+                    <a class="btn btn-default" href="update">Update Shows <span class="glyphicon glyphicon-refresh"></span></a><div style="display: inline; margin-left:50px;"/>
+                    <a class="btn btn-default" href="delete">Delete <span class="glyphicon glyphicon-trash"></span></a>
                 </form>
             </div>
 
         </div>
-        <!-- http://www.free-tv-video-online.me/search/filter.php?inside=0&movie=2&pos=0&mask=A 
-        http://www.free-tv-video-online.me/search/filter.php?movie=2&mask=s
-        -->
     </div>
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>

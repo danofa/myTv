@@ -5,10 +5,12 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -39,63 +41,33 @@ public class FtvHandler {
 
     public static void main(String[] args) throws IOException {
         System.out.println("Show Exists: " + new FtvHandler().showExists("elementary"));
-        System.out.println("episode count: " + new FtvHandler().fetchNumEpiAndSeas("the_walking_dead").episodes);
+        System.out.println("episode count: " + new FtvHandler().fetchNumEpiAndSeas("the_walking_dead").episodes.length);
         System.out.println("season count: " + new FtvHandler().fetchNumEpiAndSeas("the_walking_dead").seasons);
-
     }
 
     public FtvHandler() {
         dbao = new myTvDBAO();
     }
 
-    private ArrayList<String> getShows() {
+    public ArrayList<String> getShows() {
         return dbao.getShows();
     }
 
-    public void updateShowsData() throws IOException {
+    public void threadUpdateShows() {
+        ExecutorService exec = Executors.newCachedThreadPool();
+
         for (String s : getShows()) {
-            NumEandS nes = fetchNumEpiAndSeas(s);
-
-            if (nes.count > getEpisodeCount(s)) {
-                System.out.println("need to update local data! : " + s);
-                System.out.println("nes.nextEpi: " + nes.nextEpisodeData);
-
-                if (nes.nextEpisodeData != null) {
-                    dbao.updateNextEpisodeData(s, nes.nextEpisodeData.nextepidate, nes.nextEpisodeData.nexteid);
-                }
-
-                Map show = (Map) dbao.getShowData(s);
-                Map seasons = (Map) show.get("seasons");
-
-                if ((int) seasons.get("count") < nes.seasons) {
-                    for (int i = (int) seasons.get("count") + 1; i <= nes.seasons; i++) {
-                        addNewSeason(s, i, nes.episodes[i - 1]);
-                    }
-                }
-
-                if ((int) seasons.get("count") == nes.seasons) {
-                    for (int i = 0; i < nes.seasons; i++) {
-                        int remoteEpiCount = nes.episodes[i];
-                        Object o = ((BasicDBList) seasons.get("episode_distr")).get(i);
-                        int localEpiCount = 0;
-                        if (o instanceof Double) {
-                            localEpiCount = ((Double) o).intValue();
-                        } else {
-                            localEpiCount = (int) o;
-                        }
-
-                        if (remoteEpiCount > localEpiCount) {
-                            String[] newEids = fillUnwatched(remoteEpiCount - localEpiCount, i + 1, localEpiCount + 1);
-                            dbao.addUnwatchedEids(s, newEids);
-                            dbao.updateSeasonsData(s, i + 1, remoteEpiCount);
-                        }
-                    }
-                }
-
-                System.out.println("local seasons : " + seasons.get("count") + ", server: " + nes.seasons);
-                System.out.println("local episodes: " + seasons.get("episode_distr") + ", server: " + Arrays.toString(nes.episodes));
-            }
+            exec.submit(new UpdateShowThreadClass(s));
         }
+
+        exec.shutdown();
+        System.out.println("All thread tasks submitted");
+        try {
+            exec.awaitTermination(2, TimeUnit.MINUTES);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(FtvHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        System.out.println("finished all thread tasks.");
     }
 
     private void addNewSeason(String show, int season, int numEpisodes) {
@@ -129,7 +101,6 @@ public class FtvHandler {
         HashMap result = new HashMap();
         result.putAll((Map) dbao.getShowData(show));
 
-        System.out.println("unwatched eps for " + show + " : " + result.get("unwatched_ids"));
         ArrayList<String> uw = new ArrayList<String>();
 
         if (result.containsKey("unwatched_ids")) {
@@ -154,10 +125,8 @@ public class FtvHandler {
             return false;
 
         show = show.replace(" ", "_").toLowerCase();
-        System.out.println("formatted show name: " + show);
 
         if (showExists(show)) {
-            System.out.println("Adding show to db: " + show);
             Show s = new Show(show);
             NumEandS nes = fetchNumEpiAndSeas(show);
 
@@ -199,10 +168,8 @@ public class FtvHandler {
     private boolean showExists(String show) throws IOException {
         Document doc = getDoc(baseUrl + show);
         if (doc.title().toLowerCase().contains(badShowIndexTitle.toLowerCase())) {
-            System.out.println("show not found: " + show);
             return false;
         } else {
-            System.out.println("found series: " + show + " : " + doc.title().toLowerCase());
             return doc.title().toLowerCase().contains(show.replace("_", " "));
         }
     }
@@ -231,7 +198,6 @@ public class FtvHandler {
             if (neDate != null) {
                 data.nextepidate = neDate;
                 data.nexteid = m.group(4);
-                System.out.println("got date and extracted data: " + data.toString());
                 return data;
             }
         }
@@ -243,7 +209,6 @@ public class FtvHandler {
 
         try {
             Date nextEpiDate = df.parse(rawDate);
-            System.out.println("date: " + nextEpiDate.toString());
             return nextEpiDate;
         } catch (ParseException ex) {
             System.out.println("Error in date extraction: " + ex);
@@ -292,6 +257,10 @@ public class FtvHandler {
 
     }
 
+    public void deleteShow(String show) {
+        dbao.deleteShow(show);
+    }
+
     private Document getDoc(String url) {
         Document doc = new Document("");
         try {
@@ -307,4 +276,59 @@ public class FtvHandler {
         return doc;
     }
 
+    class UpdateShowThreadClass implements Runnable {
+
+        private String show;
+
+        public UpdateShowThreadClass(String show) {
+            this.show = show;
+        }
+
+        @Override
+        public void run() {
+            System.out.println("Thread started : " + show);
+
+            NumEandS nes = null;
+            try {
+                nes = fetchNumEpiAndSeas(show);
+            } catch (IOException ex) {
+                Logger.getLogger(FtvHandler.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+            if (nes != null && nes.count > getEpisodeCount(show)) {
+                if (nes.nextEpisodeData != null) {
+                    dbao.updateNextEpisodeData(show, nes.nextEpisodeData.nextepidate, nes.nextEpisodeData.nexteid);
+                }
+
+                Map showMap = (Map) dbao.getShowData(show);
+                Map seasons = (Map) showMap.get("seasons");
+
+                if ((int) seasons.get("count") < nes.seasons) {
+                    for (int i = (int) seasons.get("count") + 1; i <= nes.seasons; i++) {
+                        addNewSeason(show, i, nes.episodes[i - 1]);
+                    }
+                }
+
+                if ((int) seasons.get("count") == nes.seasons) {
+                    for (int i = 0; i < nes.seasons; i++) {
+                        int remoteEpiCount = nes.episodes[i];
+                        Object o = ((BasicDBList) seasons.get("episode_distr")).get(i);
+                        int localEpiCount = 0;
+                        if (o instanceof Double) {
+                            localEpiCount = ((Double) o).intValue();
+                        } else {
+                            localEpiCount = (int) o;
+                        }
+
+                        if (remoteEpiCount > localEpiCount) {
+                            String[] newEids = fillUnwatched(remoteEpiCount - localEpiCount, i + 1, localEpiCount + 1);
+                            dbao.addUnwatchedEids(show, newEids);
+                            dbao.updateSeasonsData(show, i + 1, remoteEpiCount);
+                        }
+                    }
+                }
+            }
+            System.out.println("Thread exiting: " + show);
+        }
+    }
 }

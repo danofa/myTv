@@ -25,7 +25,6 @@ public enum MongoSingleton {
     public DB getDb(String dbName) {
         DB db = null;
         if (dbClient == null) {
-            System.out.println("new db connection");
             try {
                 dbClient = new MongoClient();
                 db = dbClient.getDB(dbName);

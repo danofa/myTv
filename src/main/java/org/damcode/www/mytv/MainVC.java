@@ -45,9 +45,22 @@ public class MainVC extends HttpServlet {
             ftv.setWatched(request.getParameter("_id"), request.getParameter("eid"));
 
         } else if (requestPath.matches("/update")) {
-            ftv.updateShowsData();
-        } 
-        
+            ftv.threadUpdateShows();
+
+        } else if (requestPath.matches("/delete")) {
+            session.setAttribute("showslist", ftv.getShows());
+            if (request.getParameter("sid") == null) {
+                request.getRequestDispatcher("/WEB-INF/views/delete.jsp").forward(request, response);
+                return;
+
+            } else {
+                ftv.deleteShow(request.getParameter("sid"));
+                session.setAttribute("showslist", ftv.getShows());
+                request.getRequestDispatcher("/WEB-INF/views/delete.jsp").forward(request, response);
+                return;
+            }
+        }
+
         session.setAttribute("nextepisodes", ftv.getAllNextEpisodes());
         session.setAttribute("unwatchedshows", ftv.getAllUnwatched());
         request.getRequestDispatcher("/WEB-INF/views/index.jsp").forward(request, response);
