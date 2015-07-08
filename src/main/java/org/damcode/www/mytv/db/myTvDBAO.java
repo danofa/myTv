@@ -9,7 +9,6 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.WriteResult;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import org.damcode.www.mytv.Show;
@@ -70,15 +69,20 @@ public class myTvDBAO {
     }
 
     public ArrayList<Map> getAllNextEpisodes() {
+
         ArrayList<Map> nextData = new ArrayList<Map>();
         BasicDBObject qry = new BasicDBObject("nextepidate", 1)
                 .append("nexteid", 1);
 
         DBCursor curs = dbCollection.find(new BasicDBObject(), qry);
-
+        curs.sort(new BasicDBObject("nextepidate", 1));
+        
+        System.out.println(curs);
+        Date lastWeek = new Date(new Date().getTime() - 7 * 1000 * 60 * 60 * 24l);
+        
         while (curs.hasNext()) {
             Map m = curs.next().toMap();
-            if (m.get("nexteid") != null) {
+            if (m.get("nexteid") != null && lastWeek.compareTo((Date) m.get("nextepidate")) <= 0) {
                 nextData.add(m);
             }
         }

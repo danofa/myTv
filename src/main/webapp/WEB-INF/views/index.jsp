@@ -32,7 +32,7 @@
                             <c:forEach items="${nextepisodes}" var="nextepi">
                                 <c:set var="splitne" value="${fn:split(nextepi.nexteid, ',')}"></c:set>
                         <a href="${baseurl}${nextepi._id}">${nextepi._id}</a> // 
-                        <a href="${baseurl}${nextepi._id}/${splitne[0]}.html#${splitne[1]}">${splitne[0]}#${splitne[1]}</a> - <fmt:formatDate value="${nextepi.nextepidate}" pattern="EEE dd MMM"/><br>
+                        <a href="${baseurl}${nextepi._id}/${splitne[0]}.html#${splitne[1]}">${splitne[0]}#${splitne[1]}</a> - <fmt:formatDate value="${nextepi.nextepidate}" pattern="EEE dd MMM yyyy"/><br>
                     </c:forEach>
 
                 </div>

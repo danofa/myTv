@@ -198,7 +198,6 @@ public class FtvHandler {
             if (neDate != null) {
                 data.nextepidate = neDate;
                 data.nexteid = m.group(4);
-                System.out.println("next episode: " + data);
                 return data;
             }
         }
@@ -240,7 +239,6 @@ public class FtvHandler {
 
             // check and fill next episode data;
             NextEpisodeData neData = extractNextEpisode(s);
-            System.out.println("next epi data here is: " + neData + ":"+show);
             if (neData != null) {
                 result.nextEpisodeData = neData;
             }
