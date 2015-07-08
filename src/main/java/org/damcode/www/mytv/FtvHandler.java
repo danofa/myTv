@@ -198,6 +198,7 @@ public class FtvHandler {
             if (neDate != null) {
                 data.nextepidate = neDate;
                 data.nexteid = m.group(4);
+                System.out.println("next episode: " + data);
                 return data;
             }
         }
@@ -239,6 +240,7 @@ public class FtvHandler {
 
             // check and fill next episode data;
             NextEpisodeData neData = extractNextEpisode(s);
+            System.out.println("next epi data here is: " + neData + ":"+show);
             if (neData != null) {
                 result.nextEpisodeData = neData;
             }
@@ -295,10 +297,13 @@ public class FtvHandler {
                 Logger.getLogger(FtvHandler.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            if (nes != null && nes.count > getEpisodeCount(show)) {
+            if(nes != null){
                 if (nes.nextEpisodeData != null) {
                     dbao.updateNextEpisodeData(show, nes.nextEpisodeData.nextepidate, nes.nextEpisodeData.nexteid);
                 }
+            }
+            
+            if (nes != null && nes.count > getEpisodeCount(show)) {
 
                 Map showMap = (Map) dbao.getShowData(show);
                 Map seasons = (Map) showMap.get("seasons");
